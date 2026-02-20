@@ -13,7 +13,7 @@ class CreateHeroHeader extends StatelessWidget {
       // Increased top padding to ensure text is below the AppBar
       padding: const EdgeInsets.only(top: 120, bottom: 40, left: 24, right: 24),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.tertiary,
+        color: Theme.of(context).colorScheme.primary,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(40)),
       ),
       child: Column(

@@ -57,6 +57,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
+        leading: BackButton(color: Theme.of(context).colorScheme.onTertiary),
         title: Text(
           'Expert Analysen',
           style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onTertiary),
@@ -94,7 +95,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(
-                icon: const Icon(Icons.chevron_left, color: Colors.white),
+                icon: Icon(Icons.chevron_left, color: Theme.of(context).colorScheme.onTertiary),
                 onPressed: () => setState(() {
                   if (_isMonthly) {
                     _selectedDate = DateTime(
@@ -108,14 +109,14 @@ class _StatisticsPageState extends State<StatisticsPage> {
               ),
               Text(
                 dateLabel,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onTertiary,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.chevron_right, color: Colors.white),
+                icon: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onTertiary),
                 onPressed: () => setState(() {
                   if (_isMonthly) {
                     _selectedDate = DateTime(
@@ -136,8 +137,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
               style: SegmentedButton.styleFrom(
                 selectedBackgroundColor: Theme.of(context).colorScheme.tertiary,
                 selectedForegroundColor: Theme.of(context).colorScheme.onTertiary,
-                foregroundColor: Colors.white70,
-                side: const BorderSide(color: Colors.white24),
+                foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                side: BorderSide(color: Theme.of(context).colorScheme.onTertiary),
               ),
               segments: const [
                 ButtonSegment(value: true, label: Text('Monat')),

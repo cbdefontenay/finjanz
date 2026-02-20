@@ -12,9 +12,10 @@ class ManageCategoriesPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        leading: BackButton(color: Theme.of(context).colorScheme.onPrimary),
+        title: Text(
           'Kategorien verwalten',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onPrimary),
         ),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -38,7 +39,7 @@ class ManageCategoriesPage extends StatelessWidget {
                   ),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: color.withOpacity(0.2),
+                      backgroundColor: color.withAlpha(1),
                       child: Text(
                         category[0].toUpperCase(),
                         style: TextStyle(

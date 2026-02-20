@@ -18,10 +18,13 @@ class SettingsPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           'Einstellungen',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onPrimary),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onTertiary,
+          ),
         ),
         centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        backgroundColor: Theme.of(context).colorScheme.tertiary,
         elevation: 0,
       ),
       body: ListView(
@@ -34,7 +37,10 @@ class SettingsPage extends StatelessWidget {
             child: ListTile(
               title: const Text('Design-Thema'),
               subtitle: Text(_getThemeModeName(themeProvider.themeMode)),
-              trailing: const Icon(Icons.palette_outlined),
+              trailing: Icon(
+                Icons.palette_outlined,
+                color: Theme.of(context).colorScheme.tertiary,
+              ),
               onTap: () => _showThemeDialog(context, themeProvider),
             ),
           ),
@@ -47,7 +53,10 @@ class SettingsPage extends StatelessWidget {
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.bar_chart_outlined),
+                  leading: Icon(
+                    Icons.bar_chart_outlined,
+                    color: Theme.of(context).colorScheme.tertiary,
+                  ),
                   title: const Text('Statistiken'),
                   subtitle: const Text('Ausgaben visuell auswerten'),
                   trailing: const Icon(Icons.chevron_right),
@@ -60,7 +69,10 @@ class SettingsPage extends StatelessWidget {
                 ),
                 const Divider(height: 1, indent: 56),
                 ListTile(
-                  leading: const Icon(Icons.category_outlined),
+                  leading: Icon(
+                    Icons.category_outlined,
+                    color: Theme.of(context).colorScheme.tertiary,
+                  ),
                   title: const Text('Kategorien verwalten'),
                   subtitle: const Text('Namen bearbeiten oder löschen'),
                   trailing: const Icon(Icons.chevron_right),
@@ -81,7 +93,10 @@ class SettingsPage extends StatelessWidget {
             elevation: 0,
             color: Theme.of(context).colorScheme.surfaceContainerLow,
             child: ListTile(
-              leading: const Icon(Icons.file_download_outlined),
+              leading: Icon(
+                Icons.file_download_outlined,
+                color: Theme.of(context).colorScheme.tertiary,
+              ),
               title: const Text('Daten exportieren'),
               subtitle: const Text('Als CSV-Datei speichern'),
               onTap: () => _showExportDialog(context),
@@ -107,7 +122,7 @@ class SettingsPage extends StatelessWidget {
       child: Text(
         title.toUpperCase(),
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: Theme.of(context).colorScheme.primary,
+          color: Theme.of(context).colorScheme.tertiary,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.1,
         ),
@@ -185,28 +200,37 @@ class SettingsPage extends StatelessWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // ignore: deprecated_member_use
             RadioListTile<ThemeMode>(
               title: const Text('System-Standard'),
               value: ThemeMode.system,
+              // ignore: deprecated_member_use
               groupValue: themeProvider.themeMode,
+              // ignore: deprecated_member_use
               onChanged: (mode) {
                 themeProvider.setThemeMode(mode!);
                 Navigator.pop(context);
               },
             ),
+            // ignore: deprecated_member_use
             RadioListTile<ThemeMode>(
               title: const Text('Hell'),
               value: ThemeMode.light,
+              // ignore: deprecated_member_use
               groupValue: themeProvider.themeMode,
+              // ignore: deprecated_member_use
               onChanged: (mode) {
                 themeProvider.setThemeMode(mode!);
                 Navigator.pop(context);
               },
             ),
+            // ignore: deprecated_member_use
             RadioListTile<ThemeMode>(
               title: const Text('Dunkel'),
               value: ThemeMode.dark,
+              // ignore: deprecated_member_use
               groupValue: themeProvider.themeMode,
+              // ignore: deprecated_member_use
               onChanged: (mode) {
                 themeProvider.setThemeMode(mode!);
                 Navigator.pop(context);
