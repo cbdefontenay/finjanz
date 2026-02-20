@@ -57,12 +57,12 @@ class _StatisticsPageState extends State<StatisticsPage> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Expert Analysen',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onTertiary),
         ),
         centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        backgroundColor: Theme.of(context).colorScheme.tertiary,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -85,7 +85,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary,
+        color: Theme.of(context).colorScheme.tertiary,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
       child: Column(
@@ -134,8 +134,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: SegmentedButton<bool>(
               style: SegmentedButton.styleFrom(
-                selectedBackgroundColor: Colors.white,
-                selectedForegroundColor: Theme.of(context).colorScheme.primary,
+                selectedBackgroundColor: Theme.of(context).colorScheme.tertiary,
+                selectedForegroundColor: Theme.of(context).colorScheme.onTertiary,
                 foregroundColor: Colors.white70,
                 side: const BorderSide(color: Colors.white24),
               ),
@@ -309,7 +309,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       borderRadius: BorderRadius.circular(4),
                       child: LinearProgressIndicator(
                         value: percentage,
-                        backgroundColor: color.withOpacity(0.1),
+                        backgroundColor: color.withValues(
+                          alpha: 32,),
                         color: color,
                         minHeight: 8,
                       ),
@@ -318,7 +319,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 ),
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

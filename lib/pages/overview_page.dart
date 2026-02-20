@@ -56,16 +56,16 @@ class _OverviewPageState extends State<OverviewPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Übersicht',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onPrimary),
         ),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.primary,
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.download, color: Colors.white),
+            icon: Icon(Icons.download, color: Theme.of(context).colorScheme.onPrimary),
             onPressed: () => _showExportDialogChoice(context, filteredExpenses),
           ),
         ],
@@ -126,7 +126,7 @@ class _OverviewPageState extends State<OverviewPage> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: selectedCategory,
+                  initialValue: selectedCategory,
                   items: context
                       .read<ExpenseProvider>()
                       .categories
