@@ -1,8 +1,5 @@
 .git
 bin
 .idea
-aar
-config
-jar
-net10.0-android36.0
-obj
+build
+.dart_tool

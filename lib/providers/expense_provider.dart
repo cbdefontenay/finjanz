@@ -1,0 +1,118 @@
+import 'package:flutter/material.dart';
+import '../models/expense.dart';
+import '../services/database_service.dart';
+
+class ExpenseProvider with ChangeNotifier {
+  final DatabaseService _dbService = DatabaseService();
+  List<Expense> _expenses = [];
+  List<String> _categories = [];
+  bool _isLoading = false;
+
+  List<Expense> get expenses => _expenses;
+  List<String> get categories => _categories;
+  bool get isLoading => _isLoading;
+
+  ExpenseProvider() {
+    loadExpenses();
+    loadCategories();
+  }
+
+  Future<void> loadExpenses() async {
+    _isLoading = true;
+    notifyListeners();
+    _expenses = await _dbService.getExpenses();
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> loadCategories() async {
+    _categories = await _dbService.getCategories();
+    notifyListeners();
+  }
+
+  Future<void> addExpense(Expense expense) async {
+    await _dbService.insertExpense(expense);
+    await loadExpenses();
+    await loadCategories();
+  }
+
+  Future<void> deleteExpense(int id) async {
+    await _dbService.deleteExpense(id);
+    await loadExpenses();
+    await loadCategories();
+  }
+
+  Future<void> updateExpense(Expense expense) async {
+    await _dbService.updateExpense(expense);
+    await loadExpenses();
+    await loadCategories();
+  }
+
+  List<Expense> getMonthlyExpenses(DateTime month) {
+    return _expenses
+        .where((e) => e.date.year == month.year && e.date.month == month.month)
+        .toList();
+  }
+
+  List<Expense> getWeeklyExpenses(DateTime date) {
+    // Normalize to the start of the week (Monday) at 00:00:00
+    final startOfWeek = DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).subtract(Duration(days: date.weekday - 1));
+    final endOfWeek = startOfWeek.add(const Duration(days: 7));
+
+    return _expenses.where((e) {
+      final expenseDate = DateTime(e.date.year, e.date.month, e.date.day);
+      return (expenseDate.isAtSameMomentAs(startOfWeek) ||
+              expenseDate.isAfter(startOfWeek)) &&
+          expenseDate.isBefore(endOfWeek);
+    }).toList();
+  }
+
+  Map<String, double> getCategoryTotals(List<Expense> expenses) {
+    final totals = <String, double>{};
+    for (var e in expenses) {
+      totals[e.category] = (totals[e.category] ?? 0) + e.amount;
+    }
+    return totals;
+  }
+
+  Color getCategoryColor(String category) {
+    final List<Color> palette = [
+      Colors.blue,
+      Colors.red,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+      Colors.pink,
+      Colors.amber,
+      Colors.cyan,
+      Colors.indigo,
+      Colors.lime,
+      Colors.brown,
+    ];
+
+    // Hash the string to get a consistent index
+    int hash = 0;
+    for (int i = 0; i < category.length; i++) {
+      hash = category.codeUnitAt(i) + ((hash << 5) - hash);
+    }
+
+    return palette[hash.abs() % palette.length];
+  }
+
+  Future<void> renameCategory(String oldName, String newName) async {
+    await _dbService.renameCategory(oldName, newName);
+    await loadExpenses();
+    await loadCategories();
+  }
+
+  Future<void> deleteCategory(String category) async {
+    await _dbService.deleteCategory(category);
+    await loadExpenses();
+    await loadCategories();
+  }
+}
