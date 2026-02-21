@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/expense.dart';
 import '../services/database_service.dart';
 
@@ -112,6 +113,34 @@ class ExpenseProvider with ChangeNotifier {
 
   Future<void> deleteCategory(String category) async {
     await _dbService.deleteCategory(category);
+    await loadExpenses();
+    await loadCategories();
+  }
+
+  Map<String, Map<String, double>> getComparisonData(
+    List<DateTime> months,
+    List<String> selectedCategories,
+  ) {
+    final comparisonData = <String, Map<String, double>>{};
+
+    for (var month in months) {
+      final monthKey = DateFormat('MMM yy', 'de_DE').format(month);
+      final monthlyExpenses = getMonthlyExpenses(month);
+      final totals = <String, double>{};
+
+      for (var category in selectedCategories) {
+        totals[category] = monthlyExpenses
+            .where((e) => e.category == category)
+            .fold(0.0, (sum, e) => sum + e.amount);
+      }
+      comparisonData[monthKey] = totals;
+    }
+
+    return comparisonData;
+  }
+
+  Future<void> importExpenses(List<Expense> expenses) async {
+    await _dbService.insertExpensesBatch(expenses);
     await loadExpenses();
     await loadCategories();
   }

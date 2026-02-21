@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// A premium-looking card to display the total amount spent.
-/// Features a gradient background and subtle shadows.
 class TotalSpendingCard extends StatelessWidget {
   final double total;
 
@@ -13,35 +11,27 @@ class TotalSpendingCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.tertiary,
-        borderRadius: BorderRadius.circular(24.0),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.tertiary.withAlpha(1),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(20.0),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               'Gesamtausgaben',
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary.withAlpha(1),
-                fontSize: 16,
-                letterSpacing: 1.2,
-                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 12),
             Text(
               '${total.toStringAsFixed(2)} €',
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary,
-                fontSize: 40,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),

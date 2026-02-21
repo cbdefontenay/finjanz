@@ -30,7 +30,20 @@ class AmountInputField extends StatelessWidget {
             prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
           ),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          validator: validator,
+          validator: (value) {
+            if (value == null || value.isEmpty) return validator?.call(value);
+            final normalizedValue = value.replaceAll(',', '.');
+            return validator?.call(normalizedValue);
+          },
+          onChanged: (value) {
+            if (value.contains(',')) {
+              final newText = value.replaceAll(',', '.');
+              controller.value = controller.value.copyWith(
+                text: newText,
+                selection: TextSelection.collapsed(offset: newText.length),
+              );
+            }
+          },
         ),
       ),
     );

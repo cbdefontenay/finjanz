@@ -55,8 +55,9 @@ class _CreatePageState extends State<CreatePage> {
         return;
       }
 
+      final amountStr = _amountController.text.replaceAll(',', '.');
       final expense = Expense(
-        amount: double.parse(_amountController.text),
+        amount: double.parse(amountStr),
         category: category,
         date: _selectedDate,
         note: _noteController.text.isEmpty ? null : _noteController.text,

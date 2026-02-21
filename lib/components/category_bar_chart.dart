@@ -55,8 +55,9 @@ class CategoryBarChart extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
-                if (value < 0 || value >= sortedEntries.length)
+                if (value < 0 || value >= sortedEntries.length) {
                   return const SizedBox();
+                }
                 final cat = sortedEntries[value.toInt()].key;
                 return Padding(
                   padding: const EdgeInsets.only(top: 8.0),

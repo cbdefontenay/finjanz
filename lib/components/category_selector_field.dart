@@ -53,7 +53,7 @@ class CategorySelectorField extends StatelessWidget {
                 },
               )
             : DropdownButtonFormField<String>(
-                value: selectedCategory,
+                initialValue: selectedCategory,
                 decoration: InputDecoration(
                   labelText: 'Kategorie',
                   prefixIcon: const Icon(Icons.category_outlined),

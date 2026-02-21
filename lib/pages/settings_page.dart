@@ -92,14 +92,28 @@ class SettingsPage extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             elevation: 0,
             color: Theme.of(context).colorScheme.surfaceContainerLow,
-            child: ListTile(
-              leading: Icon(
-                Icons.file_download_outlined,
-                color: Theme.of(context).colorScheme.tertiary,
-              ),
-              title: const Text('Daten exportieren'),
-              subtitle: const Text('Als CSV-Datei speichern'),
-              onTap: () => _showExportDialog(context),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: Icon(
+                    Icons.file_download_outlined,
+                    color: Theme.of(context).colorScheme.tertiary,
+                  ),
+                  title: const Text('Daten exportieren'),
+                  subtitle: const Text('Als CSV-Datei speichern'),
+                  onTap: () => _showExportDialog(context),
+                ),
+                const Divider(height: 1, indent: 56),
+                ListTile(
+                  leading: Icon(
+                    Icons.file_upload_outlined,
+                    color: Theme.of(context).colorScheme.tertiary,
+                  ),
+                  title: const Text('Daten importieren'),
+                  subtitle: const Text('Aus CSV-Datei hinzufügen'),
+                  onTap: () => _handleImport(context),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 32),
@@ -196,7 +210,7 @@ class SettingsPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Thema auswählen'),
+        title: const Text('Modus auswählen'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -240,5 +254,64 @@ class SettingsPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _handleImport(BuildContext context) async {
+    final exportService = ExportService();
+    final expenses = await exportService.importExpensesFromCsv();
+
+    if (expenses == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Import abgebrochen oder fehlgeschlagen'),
+          ),
+        );
+      }
+      return;
+    }
+
+    if (expenses.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Keine Daten zum Importieren gefunden')),
+        );
+      }
+      return;
+    }
+
+    if (context.mounted) {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        await context.read<ExpenseProvider>().importExpenses(expenses);
+        if (context.mounted) {
+          Navigator.pop(context); // Close loading
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${expenses.length} Einträge erfolgreich importiert',
+              ),
+              backgroundColor: const Color.fromARGB(255, 45, 137, 48),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          Navigator.pop(context); // Close loading
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Fehler beim Importieren in die Datenbank'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
+    }
   }
 }

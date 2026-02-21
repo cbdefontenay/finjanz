@@ -6,6 +6,7 @@ import '../providers/expense_provider.dart';
 import '../services/export_service.dart';
 import '../components/total_spending_card.dart';
 import '../components/category_expansion_tile.dart';
+import '../components/sort_selector.dart';
 
 enum OverviewViewType { monthly, weekly }
 
@@ -19,6 +20,7 @@ class OverviewPage extends StatefulWidget {
 class _OverviewPageState extends State<OverviewPage> {
   DateTime _currentDate = DateTime.now();
   OverviewViewType _viewType = OverviewViewType.monthly;
+  SortCriteria _sortCriteria = SortCriteria.amountHighToLow;
   final ExportService _exportService = ExportService();
 
   void _next() {
@@ -49,6 +51,42 @@ class _OverviewPageState extends State<OverviewPage> {
         : expenseProvider.getWeeklyExpenses(_currentDate);
 
     final categoryTotals = expenseProvider.getCategoryTotals(filteredExpenses);
+
+    // Sorting logic
+    final sortedCategories = categoryTotals.keys.toList();
+    switch (_sortCriteria) {
+      case SortCriteria.amountHighToLow:
+        sortedCategories.sort(
+          (a, b) => categoryTotals[b]!.compareTo(categoryTotals[a]!),
+        );
+        break;
+      case SortCriteria.amountLowToHigh:
+        sortedCategories.sort(
+          (a, b) => categoryTotals[a]!.compareTo(categoryTotals[b]!),
+        );
+        break;
+      case SortCriteria.dateLastUsed:
+        sortedCategories.sort((a, b) {
+          final lastA = filteredExpenses
+              .where((e) => e.category == a)
+              .fold(
+                DateTime(2000),
+                (last, e) => e.date.isAfter(last) ? e.date : last,
+              );
+          final lastB = filteredExpenses
+              .where((e) => e.category == b)
+              .fold(
+                DateTime(2000),
+                (last, e) => e.date.isAfter(last) ? e.date : last,
+              );
+          return lastB.compareTo(lastA);
+        });
+        break;
+      case SortCriteria.nameAZ:
+        sortedCategories.sort((a, b) => a.compareTo(b));
+        break;
+    }
+
     final totalAmount = categoryTotals.values.fold(
       0.0,
       (sum, item) => sum + item,
@@ -58,43 +96,59 @@ class _OverviewPageState extends State<OverviewPage> {
       appBar: AppBar(
         title: Text(
           'Übersicht',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onPrimary),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onPrimary,
+          ),
         ),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.primary,
         elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(Icons.download, color: Theme.of(context).colorScheme.onPrimary),
+            icon: Icon(
+              Icons.download,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
             onPressed: () => _showExportDialogChoice(context, filteredExpenses),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          _buildFilterBar(),
-          TotalSpendingCard(total: totalAmount),
-          Expanded(
-            child: ListView.builder(
-              itemCount: categoryTotals.length,
-              itemBuilder: (context, index) {
-                final category = categoryTotals.keys.elementAt(index);
-                final total = categoryTotals[category]!;
-                final categoryExpenses = filteredExpenses
-                    .where((e) => e.category == category)
-                    .toList();
-
-                return CategoryExpansionTile(
-                  category: category,
-                  total: total,
-                  expenses: categoryExpenses,
-                  onEdit: (e) => _showEditDialog(context, e),
-                  onDelete: (id) =>
-                      context.read<ExpenseProvider>().deleteExpense(id),
-                );
-              },
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Column(
+              children: [
+                _buildFilterBar(),
+                SortSelector(
+                  selectedCriteria: _sortCriteria,
+                  onCriteriaChanged: (criteria) =>
+                      setState(() => _sortCriteria = criteria),
+                ),
+                TotalSpendingCard(total: totalAmount),
+                const SizedBox(height: 8),
+              ],
             ),
           ),
+          SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final category = sortedCategories[index];
+              final total = categoryTotals[category]!;
+              final categoryExpenses = filteredExpenses
+                  .where((e) => e.category == category)
+                  .toList();
+
+              return CategoryExpansionTile(
+                category: category,
+                total: total,
+                expenses: categoryExpenses,
+                onEdit: (e) => _showEditDialog(context, e),
+                onDelete: (id) =>
+                    context.read<ExpenseProvider>().deleteExpense(id),
+              );
+            }, childCount: sortedCategories.length),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],
       ),
     );
@@ -167,9 +221,12 @@ class _OverviewPageState extends State<OverviewPage> {
             ),
             TextButton(
               onPressed: () {
+                final amountStr = amountController.text.replaceAll(',', '.');
+                final amountValue =
+                    double.tryParse(amountStr) ?? expense.amount;
                 final updated = Expense(
                   id: expense.id,
-                  amount: double.parse(amountController.text),
+                  amount: amountValue,
                   category: selectedCategory,
                   date: selectedDate,
                   note: noteController.text.isEmpty

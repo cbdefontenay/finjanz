@@ -82,4 +82,13 @@ class DatabaseService {
     final db = await database;
     await db.delete('expenses', where: 'category = ?', whereArgs: [name]);
   }
+
+  Future<void> insertExpensesBatch(List<Expense> expenses) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      for (var expense in expenses) {
+        await txn.insert('expenses', expense.toMap());
+      }
+    });
+  }
 }

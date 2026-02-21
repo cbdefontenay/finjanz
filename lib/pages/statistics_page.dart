@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/expense_provider.dart';
-import '../components/category_pie_chart.dart';
-import '../components/category_bar_chart.dart';
+import '../components/comparison_bar_chart.dart';
 import '../components/total_spending_card.dart';
-
-enum ChartType { pie, bar }
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});
@@ -16,9 +13,10 @@ class StatisticsPage extends StatefulWidget {
 }
 
 class _StatisticsPageState extends State<StatisticsPage> {
-  DateTime _selectedDate = DateTime.now();
-  bool _isMonthly = true;
-  ChartType _chartType = ChartType.pie;
+  final List<DateTime> _selectedMonths = [
+    DateTime(DateTime.now().year, DateTime.now().month),
+    DateTime(DateTime.now().year, DateTime.now().month - 1),
+  ];
   Set<String> _selectedCategories = {};
   bool _isInitialized = false;
 
@@ -32,35 +30,47 @@ class _StatisticsPageState extends State<StatisticsPage> {
     }
   }
 
+  void _toggleMonth(DateTime month) {
+    setState(() {
+      final normalized = DateTime(month.year, month.month);
+      if (_selectedMonths.any(
+        (m) => m.year == normalized.year && m.month == normalized.month,
+      )) {
+        if (_selectedMonths.length > 1) {
+          _selectedMonths.removeWhere(
+            (m) => m.year == normalized.year && m.month == normalized.month,
+          );
+        }
+      } else {
+        _selectedMonths.add(normalized);
+        _selectedMonths.sort((a, b) => b.compareTo(a));
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final expenseProvider = context.watch<ExpenseProvider>();
-    final allExpenses = _isMonthly
-        ? expenseProvider.getMonthlyExpenses(_selectedDate)
-        : expenseProvider.expenses
-              .where((e) => e.date.year == _selectedDate.year)
-              .toList();
-
-    final filteredExpenses = allExpenses
-        .where((e) => _selectedCategories.contains(e.category))
-        .toList();
-    final categoryTotals = expenseProvider.getCategoryTotals(filteredExpenses);
-    final totalAmount = categoryTotals.values.fold(
-      0.0,
-      (sum, val) => sum + val,
+    final comparisonData = expenseProvider.getComparisonData(
+      _selectedMonths,
+      _selectedCategories.toList(),
     );
 
-    final String dateLabel = _isMonthly
-        ? DateFormat('MMMM yyyy', 'de_DE').format(_selectedDate)
-        : _selectedDate.year.toString();
+    double totalAmount = 0;
+    for (var monthData in comparisonData.values) {
+      totalAmount += monthData.values.fold(0.0, (sum, val) => sum + val);
+    }
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         leading: BackButton(color: Theme.of(context).colorScheme.onTertiary),
         title: Text(
-          'Expert Analysen',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onTertiary),
+          'Vergleichs-Dashboard',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onTertiary,
+          ),
         ),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.tertiary,
@@ -69,12 +79,12 @@ class _StatisticsPageState extends State<StatisticsPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildCustomHeader(dateLabel),
+            _buildMonthPickerHeader(),
             const SizedBox(height: 16),
             _buildCategoryFilter(expenseProvider.categories),
             TotalSpendingCard(total: totalAmount),
-            _buildChartSection(categoryTotals),
-            _buildRankingSection(categoryTotals, totalAmount),
+            _buildChartSection(comparisonData),
+            _buildRankingSection(comparisonData),
             const SizedBox(height: 32),
           ],
         ),
@@ -82,71 +92,66 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
-  Widget _buildCustomHeader(String dateLabel) {
+  Widget _buildMonthPickerHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.tertiary,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: Icon(Icons.chevron_left, color: Theme.of(context).colorScheme.onTertiary),
-                onPressed: () => setState(() {
-                  if (_isMonthly) {
-                    _selectedDate = DateTime(
-                      _selectedDate.year,
-                      _selectedDate.month - 1,
-                    );
-                  } else {
-                    _selectedDate = DateTime(_selectedDate.year - 1);
-                  }
-                }),
-              ),
-              Text(
-                dateLabel,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onTertiary,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onTertiary),
-                onPressed: () => setState(() {
-                  if (_isMonthly) {
-                    _selectedDate = DateTime(
-                      _selectedDate.year,
-                      _selectedDate.month + 1,
-                    );
-                  } else {
-                    _selectedDate = DateTime(_selectedDate.year + 1);
-                  }
-                }),
-              ),
-            ],
+          Text(
+            'MONATE VERGLEICHEN',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onTertiary,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
           ),
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: SegmentedButton<bool>(
-              style: SegmentedButton.styleFrom(
-                selectedBackgroundColor: Theme.of(context).colorScheme.tertiary,
-                selectedForegroundColor: Theme.of(context).colorScheme.onTertiary,
-                foregroundColor: Theme.of(context).colorScheme.onTertiary,
-                side: BorderSide(color: Theme.of(context).colorScheme.onTertiary),
-              ),
-              segments: const [
-                ButtonSegment(value: true, label: Text('Monat')),
-                ButtonSegment(value: false, label: Text('Jahr')),
-              ],
-              selected: {_isMonthly},
-              onSelectionChanged: (val) =>
-                  setState(() => _isMonthly = val.first),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 50,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: 12, // Last 12 months
+              itemBuilder: (context, index) {
+                final date = DateTime(
+                  DateTime.now().year,
+                  DateTime.now().month - index,
+                );
+                final isSelected = _selectedMonths.any(
+                  (m) => m.year == date.year && m.month == date.month,
+                );
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: FilterChip(
+                    label: Text(DateFormat('MMM yy', 'de_DE').format(date)),
+                    selected: isSelected,
+                    selectedColor: Colors.white,
+                    checkmarkColor: Theme.of(context).colorScheme.tertiary,
+                    labelStyle: TextStyle(
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.tertiary
+                          : Theme.of(context).colorScheme.tertiary,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                    backgroundColor: Colors.white12,
+                    shape: StadiumBorder(
+                      side: BorderSide(
+                        color: isSelected ? Colors.white : Colors.white24,
+                      ),
+                    ),
+                    onSelected: (_) => _toggleMonth(date),
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -161,7 +166,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
           child: Text(
-            'KATEGORIEN FILTERN',
+            'KATEGORIEN WÄHLEN',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 12,
@@ -186,7 +191,14 @@ class _StatisticsPageState extends State<StatisticsPage> {
                   onSelected: (selected) => setState(() {
                     selected
                         ? _selectedCategories.add(cat)
-                        : _selectedCategories.remove(cat);
+                        : _isMonthCategorySelected(cat)
+                        ? _selectedCategories.remove(cat)
+                        : null;
+
+                    // Don't allow 0 categories
+                    if (_selectedCategories.isEmpty) {
+                      _selectedCategories.add(cat);
+                    }
                   }),
                 ),
               );
@@ -197,7 +209,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
-  Widget _buildChartSection(Map<String, double> categoryTotals) {
+  bool _isMonthCategorySelected(String cat) {
+    return _selectedCategories.length > 1;
+  }
+
+  Widget _buildChartSection(Map<String, Map<String, double>> comparisonData) {
+    final monthKeys = comparisonData.keys.toList().reversed.toList();
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Card(
@@ -207,45 +225,20 @@ class _StatisticsPageState extends State<StatisticsPage> {
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Visualisierung',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
-                  ToggleButtons(
-                    borderRadius: BorderRadius.circular(12),
-                    constraints: const BoxConstraints(
-                      minHeight: 32,
-                      minWidth: 48,
-                    ),
-                    isSelected: [
-                      _chartType == ChartType.pie,
-                      _chartType == ChartType.bar,
-                    ],
-                    onPressed: (index) => setState(
-                      () => _chartType = index == 0
-                          ? ChartType.pie
-                          : ChartType.bar,
-                    ),
-                    children: const [
-                      Icon(Icons.pie_chart_outline, size: 20),
-                      Icon(Icons.bar_chart_outlined, size: 20),
-                    ],
-                  ),
-                ],
+              const Text(
+                'Vergleichsanalyse',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
-              const SizedBox(height: 32),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 400),
-                child: _chartType == ChartType.pie
-                    ? CategoryPieChart(categoryTotals: categoryTotals)
-                    : SizedBox(
-                        height: 300,
-                        child: CategoryBarChart(categoryTotals: categoryTotals),
-                      ),
+              const SizedBox(height: 24),
+              SizedBox(
+                height: 300,
+                child: ComparisonBarChart(
+                  data: comparisonData,
+                  categories: _selectedCategories.toList(),
+                  months: monthKeys,
+                ),
               ),
             ],
           ),
@@ -254,11 +247,22 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
-  Widget _buildRankingSection(Map<String, double> totals, double totalAmount) {
-    if (totals.isEmpty) return const SizedBox();
+  Widget _buildRankingSection(Map<String, Map<String, double>> comparisonData) {
+    // Show a summary of totals per category across all selected periods
+    final aggregateTotals = <String, double>{};
+    for (var monthData in comparisonData.values) {
+      monthData.forEach((cat, amount) {
+        aggregateTotals[cat] = (aggregateTotals[cat] ?? 0) + amount;
+      });
+    }
 
-    final sortedEntries = totals.entries.toList()
+    final sortedEntries = aggregateTotals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
+
+    final totalValue = aggregateTotals.values.fold(
+      0.0,
+      (sum, val) => sum + val,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -268,55 +272,37 @@ class _StatisticsPageState extends State<StatisticsPage> {
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0),
             child: Text(
-              'Kategorie-Ranking',
+              'Gesamtübersicht (Gewählter Zeitraum)',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
           ),
           ...sortedEntries.map((entry) {
-            final percentage = entry.value / totalAmount;
+            final percentage = totalValue > 0 ? entry.value / totalValue : 0.0;
             final color = context.read<ExpenseProvider>().getCategoryColor(
               entry.key,
             );
 
             return Card(
               elevation: 0,
-              margin: const EdgeInsets.only(bottom: 8),
+              margin: const EdgeInsets.only(bottom: 12),
               color: Theme.of(context).colorScheme.surfaceContainerLow,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          entry.key,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          '${entry.value.toStringAsFixed(2)} €',
-                          style: TextStyle(
-                            color: color,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: percentage,
-                        backgroundColor: color.withValues(
-                          alpha: 32,),
-                        color: color,
-                        minHeight: 8,
-                      ),
-                    ),
-                  ],
+              child: ListTile(
+                title: Text(
+                  entry.key,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: LinearProgressIndicator(
+                  value: percentage,
+                  color: color,
+                  backgroundColor: color.withAlpha(30),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                trailing: Text(
+                  '${entry.value.toStringAsFixed(2)} €',
+                  style: TextStyle(color: color, fontWeight: FontWeight.bold),
                 ),
               ),
             );
