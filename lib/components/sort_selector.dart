@@ -43,12 +43,12 @@ class SortSelector extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12,
                           color: isSelected
-                              ? Theme.of(context).colorScheme.onPrimary
+                              ? Theme.of(context).colorScheme.onTertiary
                               : null,
                         ),
                       ),
                       selected: isSelected,
-                      selectedColor: Theme.of(context).colorScheme.secondary,
+                      selectedColor: Theme.of(context).colorScheme.tertiary,
                       onSelected: (selected) {
                         if (selected) {
                           onCriteriaChanged(criteria);
