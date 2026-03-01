@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
@@ -46,10 +47,20 @@ class ExportService {
 
       final file = File(result.files.single.path!);
       final input = await file.readAsString();
-      final List<List<dynamic>> rows = const CsvToListConverter().convert(
-        input,
+
+      // Auto-detect delimiter (comma vs semicolon)
+      String delimiter = ',';
+      if (input.isNotEmpty) {
+        final firstLine = input.split('\n').first;
+        if (firstLine.split(';').length > firstLine.split(',').length) {
+          delimiter = ';';
+        }
+      }
+
+      final List<List<dynamic>> rows = CsvToListConverter(
+        fieldDelimiter: delimiter,
         shouldParseNumbers: false,
-      );
+      ).convert(input);
 
       if (rows.length <= 1) return []; // Only header or empty
 
@@ -59,16 +70,33 @@ class ExportService {
         final row = rows[i];
         if (row.length < 3) continue;
 
-        final category = row[0].toString();
-        // Handle sum potential comma (though export uses dot via toStringAsFixed, user might edit)
-        final amountStr = row[1].toString().replaceAll(',', '.');
+        final category = row[0].toString().trim();
+
+        // Handle sum potential comma and thousands separators
+        String amountStr = row[1].toString().replaceAll(' ', '');
+        // If it format like 1.000,50
+        if (amountStr.contains('.') && amountStr.contains(',')) {
+          amountStr = amountStr.replaceAll('.', '').replaceAll(',', '.');
+        } else {
+          amountStr = amountStr.replaceAll(',', '.');
+        }
+
         final amount = double.tryParse(amountStr) ?? 0.0;
 
         DateTime date;
+        final dateStr = row[2].toString().trim();
         try {
-          date = DateFormat('dd.MM.yyyy').parse(row[2].toString());
+          date = DateFormat('dd.MM.yyyy').parseStrict(dateStr);
         } catch (_) {
-          date = DateTime.now();
+          try {
+            date = DateFormat('yyyy-MM-dd').parse(dateStr);
+          } catch (_) {
+            try {
+              date = DateFormat('dd/MM/yyyy').parse(dateStr);
+            } catch (_) {
+              date = DateTime.now(); // Fallback
+            }
+          }
         }
 
         final note = row.length > 3 ? row[3].toString() : null;
@@ -86,6 +114,50 @@ class ExportService {
       return importedExpenses;
     } catch (e) {
       debugPrint('Import error: $e');
+      return null;
+    }
+  }
+
+  String generateQrData(List<Expense> expenses) {
+    // Compress data to save QR space: c=category, a=amount, d=date(ms), n=note
+    final reducedList = expenses.map((e) {
+      final map = <String, dynamic>{
+        'c': e.category,
+        'a': e.amount,
+        'd': e.date.millisecondsSinceEpoch,
+      };
+      if (e.note != null && e.note!.isNotEmpty) {
+        map['n'] = e.note;
+      }
+      return map;
+    }).toList();
+
+    return jsonEncode(reducedList);
+  }
+
+  List<Expense>? parseQrData(String qrData) {
+    try {
+      final List<dynamic> decoded = jsonDecode(qrData);
+      final List<Expense> importedExpenses = [];
+
+      for (var item in decoded) {
+        if (item is Map<String, dynamic>) {
+          final category = item['c']?.toString() ?? 'Unbekannt';
+          final amount = (item['a'] as num?)?.toDouble() ?? 0.0;
+          final dateMs = item['d'] as int?;
+          final date = dateMs != null
+              ? DateTime.fromMillisecondsSinceEpoch(dateMs)
+              : DateTime.now();
+          final note = item['n']?.toString();
+
+          importedExpenses.add(
+            Expense(category: category, amount: amount, date: date, note: note),
+          );
+        }
+      }
+      return importedExpenses;
+    } catch (e) {
+      debugPrint('QR Parse error: $e');
       return null;
     }
   }

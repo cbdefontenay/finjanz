@@ -6,6 +6,8 @@ import '../providers/expense_provider.dart';
 import '../services/export_service.dart';
 import 'statistics_page.dart';
 import 'manage_categories_page.dart';
+import '../components/qr_export_dialog.dart';
+import 'qr_scanner_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -113,6 +115,16 @@ class SettingsPage extends StatelessWidget {
                   subtitle: const Text('Aus CSV-Datei hinzufügen'),
                   onTap: () => _handleImport(context),
                 ),
+                const Divider(height: 1, indent: 56),
+                ListTile(
+                  leading: Icon(
+                    Icons.qr_code_scanner,
+                    color: Theme.of(context).colorScheme.tertiary,
+                  ),
+                  title: const Text('QR-Code scannen'),
+                  subtitle: const Text('Daten von anderem Gerät empfangen'),
+                  onTap: () => _scanQrCode(context),
+                ),
               ],
             ),
           ),
@@ -188,11 +200,72 @@ class SettingsPage extends StatelessWidget {
               );
               Navigator.pop(ctx);
             },
-            child: const Text('Alle'),
+            child: const Text('Alle (CSV)'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              final now = DateTime.now();
+              final data = expenseProvider.getMonthlyExpenses(now);
+              final qrData = exportService.generateQrData(data);
+              showDialog(
+                context: context,
+                builder: (context) => QrExportDialog(qrData: qrData),
+              );
+            },
+            child: const Text('QR-Code (Diesen Monat)'),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _scanQrCode(BuildContext context) async {
+    final scannedData = await Navigator.push<String?>(
+      context,
+      MaterialPageRoute(builder: (context) => const QrScannerPage()),
+    );
+
+    if (scannedData != null && scannedData.isNotEmpty) {
+      if (context.mounted) {
+        final exportService = ExportService();
+        final expenses = exportService.parseQrData(scannedData);
+        if (expenses != null && expenses.isNotEmpty) {
+          final importedCount = await context
+              .read<ExpenseProvider>()
+              .importExpenses(expenses);
+          if (context.mounted) {
+            if (importedCount > 0) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '$importedCount neue Einträge per QR-Code importiert',
+                  ),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Keine neuen Einträge gefunden (Duplikate übersprungen)',
+                  ),
+                ),
+              );
+            }
+          }
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Ungültiger oder leerer QR-Code'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      }
+    }
   }
 
   String _getThemeModeName(ThemeMode mode) {
@@ -289,17 +362,29 @@ class SettingsPage extends StatelessWidget {
       );
 
       try {
-        await context.read<ExpenseProvider>().importExpenses(expenses);
+        final importedCount = await context
+            .read<ExpenseProvider>()
+            .importExpenses(expenses);
         if (context.mounted) {
           Navigator.pop(context); // Close loading
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${expenses.length} Einträge erfolgreich importiert',
+          if (importedCount > 0) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '$importedCount neue Einträge erfolgreich importiert',
+                ),
+                backgroundColor: Colors.green,
               ),
-              backgroundColor: const Color.fromARGB(255, 45, 137, 48),
-            ),
-          );
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Keine neuen Einträge zum Importieren gefunden (Duplikate übersprungen)',
+                ),
+              ),
+            );
+          }
         }
       } catch (e) {
         if (context.mounted) {

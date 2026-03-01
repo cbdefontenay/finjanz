@@ -139,9 +139,31 @@ class ExpenseProvider with ChangeNotifier {
     return comparisonData;
   }
 
-  Future<void> importExpenses(List<Expense> expenses) async {
-    await _dbService.insertExpensesBatch(expenses);
-    await loadExpenses();
-    await loadCategories();
+  Future<int> importExpenses(List<Expense> expenses) async {
+    final newExpenses = <Expense>[];
+
+    for (var exp in expenses) {
+      final exists = _expenses.any(
+        (existing) =>
+            existing.category == exp.category &&
+            existing.amount == exp.amount &&
+            existing.date.year == exp.date.year &&
+            existing.date.month == exp.date.month &&
+            existing.date.day == exp.date.day &&
+            existing.note == exp.note,
+      );
+
+      if (!exists) {
+        newExpenses.add(exp);
+      }
+    }
+
+    if (newExpenses.isNotEmpty) {
+      await _dbService.insertExpensesBatch(newExpenses);
+      await loadExpenses();
+      await loadCategories();
+    }
+
+    return newExpenses.length;
   }
 }
