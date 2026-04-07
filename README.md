@@ -18,3 +18,5 @@
 - Nur für **Android** optimiert  
 
 Perfekt für alle, die eine einfache, werbefreie und wirklich private Haushaltsbuch-Alternative suchen.
+
+[Hier](https://github.com/cbdefontenay/finjanz/releases/tag/V1.0.9) kannst du die `apk`Datei herunterladen.
