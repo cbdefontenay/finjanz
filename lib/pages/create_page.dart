@@ -21,6 +21,7 @@ class _CreatePageState extends State<CreatePage> {
   DateTime _selectedDate = DateTime.now();
   String? _selectedCategory;
   bool _isAddingNewCategory = false;
+  bool _isRecurring = false;
 
   @override
   void dispose() {
@@ -61,6 +62,7 @@ class _CreatePageState extends State<CreatePage> {
         category: category,
         date: _selectedDate,
         note: _noteController.text.isEmpty ? null : _noteController.text,
+        isRecurring: _isRecurring,
       );
 
       context.read<ExpenseProvider>().addExpense(expense);
@@ -71,6 +73,7 @@ class _CreatePageState extends State<CreatePage> {
       setState(() {
         _selectedDate = DateTime.now();
         _isAddingNewCategory = false;
+        _isRecurring = false;
         _selectedCategory = null;
       });
 
@@ -108,11 +111,13 @@ class _CreatePageState extends State<CreatePage> {
                 categories: categories,
                 selectedCategory: _selectedCategory,
                 isAddingNewCategory: _isAddingNewCategory,
+                isRecurring: _isRecurring,
                 categoryController: _categoryController,
                 noteController: _noteController,
                 categoryFocusNode: _categoryFocusNode,
                 selectedDate: _selectedDate,
                 onSelectDate: _selectDate,
+                onRecurringChanged: (val) => setState(() => _isRecurring = val),
                 onCategoryChanged: (value) {
                   if (value == 'NEW_CATEGORY') {
                     setState(() => _isAddingNewCategory = true);

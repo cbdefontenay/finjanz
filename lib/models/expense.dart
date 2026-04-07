@@ -4,6 +4,7 @@ class Expense {
   final double amount;
   final DateTime date;
   final String? note;
+  final bool isRecurring;
 
   Expense({
     this.id,
@@ -11,6 +12,7 @@ class Expense {
     required this.amount,
     required this.date,
     this.note,
+    this.isRecurring = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -20,6 +22,7 @@ class Expense {
       'amount': amount,
       'date': date.toIso8601String(),
       'note': note,
+      'isRecurring': isRecurring ? 1 : 0,
     };
   }
 
@@ -30,6 +33,7 @@ class Expense {
       amount: map['amount'],
       date: DateTime.parse(map['date']),
       note: map['note'],
+      isRecurring: map['isRecurring'] == 1,
     );
   }
 }

@@ -6,12 +6,14 @@ class CreateEntryForm extends StatelessWidget {
   final List<String> categories;
   final String? selectedCategory;
   final bool isAddingNewCategory;
+  final bool isRecurring;
   final TextEditingController categoryController;
   final TextEditingController noteController;
   final FocusNode categoryFocusNode;
   final DateTime selectedDate;
   final VoidCallback onSelectDate;
   final Function(String?) onCategoryChanged;
+  final Function(bool) onRecurringChanged;
   final VoidCallback onToggleAddMode;
   final VoidCallback onSubmit;
 
@@ -20,12 +22,14 @@ class CreateEntryForm extends StatelessWidget {
     required this.categories,
     required this.selectedCategory,
     required this.isAddingNewCategory,
+    required this.isRecurring,
     required this.categoryController,
     required this.noteController,
     required this.categoryFocusNode,
     required this.selectedDate,
     required this.onSelectDate,
     required this.onCategoryChanged,
+    required this.onRecurringChanged,
     required this.onToggleAddMode,
     required this.onSubmit,
   });
@@ -61,6 +65,14 @@ class CreateEntryForm extends StatelessWidget {
               fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
             ),
             maxLines: 2,
+          ),
+          const SizedBox(height: 20),
+          SwitchListTile(
+            title: const Text('Wiederkehrend (Monatlich)'),
+            value: isRecurring,
+            onChanged: onRecurringChanged,
+            contentPadding: EdgeInsets.zero,
+            activeTrackColor: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(height: 32),
           FilledButton(

@@ -20,11 +20,17 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'finjanz.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) {
         return db.execute(
-          'CREATE TABLE expenses(id INTEGER PRIMARY KEY AUTOINCREMENT, category TEXT, amount REAL, date TEXT, note TEXT)',
+          'CREATE TABLE expenses(id INTEGER PRIMARY KEY AUTOINCREMENT, category TEXT, amount REAL, date TEXT, note TEXT, isRecurring INTEGER DEFAULT 0)',
         );
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute(
+              'ALTER TABLE expenses ADD COLUMN isRecurring INTEGER DEFAULT 0');
+        }
       },
     );
   }

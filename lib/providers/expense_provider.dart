@@ -17,11 +17,54 @@ class ExpenseProvider with ChangeNotifier {
     loadExpenses();
     loadCategories();
   }
-
   Future<void> loadExpenses() async {
     _isLoading = true;
     notifyListeners();
     _expenses = await _dbService.getExpenses();
+
+    bool addedNew = false;
+    final now = DateTime.now();
+    final currentMonth = DateTime(now.year, now.month);
+
+    final recurringExpenses = _expenses.where((e) => e.isRecurring).toList();
+    for (var expense in recurringExpenses) {
+      var d = DateTime(expense.date.year, expense.date.month + 1);
+      while (d.isBefore(currentMonth) || d.isAtSameMomentAs(currentMonth)) {
+        final exists = _expenses.any((e) =>
+            e.category == expense.category &&
+            e.amount == expense.amount &&
+            e.isRecurring == true &&
+            e.date.year == d.year &&
+            e.date.month == d.month);
+
+        if (!exists) {
+          // Create for this month
+          // Adjust day if month doesn't have that day (e.g. Feb 30 -> Feb 28)
+          int day = expense.date.day;
+          final lastDayOfMonth = DateTime(d.year, d.month + 1, 0).day;
+          if (day > lastDayOfMonth) {
+            day = lastDayOfMonth;
+          }
+
+          final newExpense = Expense(
+            category: expense.category,
+            amount: expense.amount,
+            date: DateTime(d.year, d.month, day),
+            note: expense.note,
+            isRecurring: true,
+          );
+          await _dbService.insertExpense(newExpense);
+          addedNew = true;
+        }
+
+        d = DateTime(d.year, d.month + 1);
+      }
+    }
+
+    if (addedNew) {
+      _expenses = await _dbService.getExpenses();
+    }
+
     _isLoading = false;
     notifyListeners();
   }

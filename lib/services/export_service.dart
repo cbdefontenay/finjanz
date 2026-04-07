@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
@@ -16,7 +15,7 @@ class ExportService {
     List<List<dynamic>> rows = [];
 
     // Header
-    rows.add(['Kategorie', 'Summe', 'Datum', 'Notiz']);
+    rows.add(['Kategorie', 'Summe', 'Datum', 'Notiz', 'Wiederholend']);
 
     for (var e in expenses) {
       rows.add([
@@ -24,6 +23,7 @@ class ExportService {
         e.amount.toStringAsFixed(2),
         DateFormat('dd.MM.yyyy').format(e.date),
         e.note ?? '',
+        e.isRecurring ? 1 : 0,
       ]);
     }
 
@@ -33,12 +33,17 @@ class ExportService {
     final file = File('${directory.path}/${fileName ?? 'Finanzen_Export'}.csv');
     await file.writeAsString(csv);
 
-    await Share.shareXFiles([XFile(file.path)], text: 'Mein Finanz-Export');
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path)],
+        text: 'Mein Finanz-Export',
+      ),
+    );
   }
 
   Future<List<Expense>?> importExpensesFromCsv() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['csv'],
       );
@@ -100,6 +105,7 @@ class ExportService {
         }
 
         final note = row.length > 3 ? row[3].toString() : null;
+        final isRecurring = row.length > 4 ? row[4].toString() == '1' : false;
 
         importedExpenses.add(
           Expense(
@@ -107,6 +113,7 @@ class ExportService {
             amount: amount,
             date: date,
             note: note == '' ? null : note,
+            isRecurring: isRecurring,
           ),
         );
       }
@@ -114,50 +121,6 @@ class ExportService {
       return importedExpenses;
     } catch (e) {
       debugPrint('Import error: $e');
-      return null;
-    }
-  }
-
-  String generateQrData(List<Expense> expenses) {
-    // Compress data to save QR space: c=category, a=amount, d=date(ms), n=note
-    final reducedList = expenses.map((e) {
-      final map = <String, dynamic>{
-        'c': e.category,
-        'a': e.amount,
-        'd': e.date.millisecondsSinceEpoch,
-      };
-      if (e.note != null && e.note!.isNotEmpty) {
-        map['n'] = e.note;
-      }
-      return map;
-    }).toList();
-
-    return jsonEncode(reducedList);
-  }
-
-  List<Expense>? parseQrData(String qrData) {
-    try {
-      final List<dynamic> decoded = jsonDecode(qrData);
-      final List<Expense> importedExpenses = [];
-
-      for (var item in decoded) {
-        if (item is Map<String, dynamic>) {
-          final category = item['c']?.toString() ?? 'Unbekannt';
-          final amount = (item['a'] as num?)?.toDouble() ?? 0.0;
-          final dateMs = item['d'] as int?;
-          final date = dateMs != null
-              ? DateTime.fromMillisecondsSinceEpoch(dateMs)
-              : DateTime.now();
-          final note = item['n']?.toString();
-
-          importedExpenses.add(
-            Expense(category: category, amount: amount, date: date, note: note),
-          );
-        }
-      }
-      return importedExpenses;
-    } catch (e) {
-      debugPrint('QR Parse error: $e');
       return null;
     }
   }

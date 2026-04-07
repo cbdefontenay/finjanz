@@ -6,8 +6,6 @@ import '../providers/expense_provider.dart';
 import '../services/export_service.dart';
 import 'statistics_page.dart';
 import 'manage_categories_page.dart';
-import '../components/qr_export_dialog.dart';
-import 'qr_scanner_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -38,7 +36,7 @@ class SettingsPage extends StatelessWidget {
             color: Theme.of(context).colorScheme.surfaceContainerLow,
             child: ListTile(
               title: const Text('Design-Thema'),
-              subtitle: Text(_getThemeModeName(themeProvider.themeMode)),
+              subtitle: Text(_getThemeModeName(themeProvider.appTheme)),
               trailing: Icon(
                 Icons.palette_outlined,
                 color: Theme.of(context).colorScheme.tertiary,
@@ -115,16 +113,7 @@ class SettingsPage extends StatelessWidget {
                   subtitle: const Text('Aus CSV-Datei hinzufügen'),
                   onTap: () => _handleImport(context),
                 ),
-                const Divider(height: 1, indent: 56),
-                ListTile(
-                  leading: Icon(
-                    Icons.qr_code_scanner,
-                    color: Theme.of(context).colorScheme.tertiary,
-                  ),
-                  title: const Text('QR-Code scannen'),
-                  subtitle: const Text('Daten von anderem Gerät empfangen'),
-                  onTap: () => _scanQrCode(context),
-                ),
+
               ],
             ),
           ),
@@ -202,80 +191,24 @@ class SettingsPage extends StatelessWidget {
             },
             child: const Text('Alle (CSV)'),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              final now = DateTime.now();
-              final data = expenseProvider.getMonthlyExpenses(now);
-              final qrData = exportService.generateQrData(data);
-              showDialog(
-                context: context,
-                builder: (context) => QrExportDialog(qrData: qrData),
-              );
-            },
-            child: const Text('QR-Code (Diesen Monat)'),
-          ),
+
         ],
       ),
     );
   }
 
-  Future<void> _scanQrCode(BuildContext context) async {
-    final scannedData = await Navigator.push<String?>(
-      context,
-      MaterialPageRoute(builder: (context) => const QrScannerPage()),
-    );
-
-    if (scannedData != null && scannedData.isNotEmpty) {
-      if (context.mounted) {
-        final exportService = ExportService();
-        final expenses = exportService.parseQrData(scannedData);
-        if (expenses != null && expenses.isNotEmpty) {
-          final importedCount = await context
-              .read<ExpenseProvider>()
-              .importExpenses(expenses);
-          if (context.mounted) {
-            if (importedCount > 0) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '$importedCount neue Einträge per QR-Code importiert',
-                  ),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Keine neuen Einträge gefunden (Duplikate übersprungen)',
-                  ),
-                ),
-              );
-            }
-          }
-        } else {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Ungültiger oder leerer QR-Code'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        }
-      }
-    }
-  }
-
-  String _getThemeModeName(ThemeMode mode) {
-    switch (mode) {
-      case ThemeMode.system:
+  String _getThemeModeName(AppTheme theme) {
+    switch (theme) {
+      case AppTheme.system:
         return 'System-Standard';
-      case ThemeMode.light:
-        return 'Hell';
-      case ThemeMode.dark:
-        return 'Dunkel';
+      case AppTheme.light:
+        return 'Hell (Light)';
+      case AppTheme.dark:
+        return 'Dunkel (Dark)';
+      case AppTheme.ocean:
+        return 'Ozean (Ocean)';
+      case AppTheme.forest:
+        return 'Wald (Forest)';
     }
   }
 
@@ -287,39 +220,48 @@ class SettingsPage extends StatelessWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ignore: deprecated_member_use
-            RadioListTile<ThemeMode>(
+            RadioListTile<AppTheme>(
               title: const Text('System-Standard'),
-              value: ThemeMode.system,
-              // ignore: deprecated_member_use
-              groupValue: themeProvider.themeMode,
-              // ignore: deprecated_member_use
-              onChanged: (mode) {
-                themeProvider.setThemeMode(mode!);
+              value: AppTheme.system,
+              groupValue: themeProvider.appTheme,
+              onChanged: (theme) {
+                themeProvider.setAppTheme(theme!);
                 Navigator.pop(context);
               },
             ),
-            // ignore: deprecated_member_use
-            RadioListTile<ThemeMode>(
+            RadioListTile<AppTheme>(
               title: const Text('Hell'),
-              value: ThemeMode.light,
-              // ignore: deprecated_member_use
-              groupValue: themeProvider.themeMode,
-              // ignore: deprecated_member_use
-              onChanged: (mode) {
-                themeProvider.setThemeMode(mode!);
+              value: AppTheme.light,
+              groupValue: themeProvider.appTheme,
+              onChanged: (theme) {
+                themeProvider.setAppTheme(theme!);
                 Navigator.pop(context);
               },
             ),
-            // ignore: deprecated_member_use
-            RadioListTile<ThemeMode>(
+            RadioListTile<AppTheme>(
               title: const Text('Dunkel'),
-              value: ThemeMode.dark,
-              // ignore: deprecated_member_use
-              groupValue: themeProvider.themeMode,
-              // ignore: deprecated_member_use
-              onChanged: (mode) {
-                themeProvider.setThemeMode(mode!);
+              value: AppTheme.dark,
+              groupValue: themeProvider.appTheme,
+              onChanged: (theme) {
+                themeProvider.setAppTheme(theme!);
+                Navigator.pop(context);
+              },
+            ),
+            RadioListTile<AppTheme>(
+              title: const Text('Ozean (Blau)'),
+              value: AppTheme.ocean,
+              groupValue: themeProvider.appTheme,
+              onChanged: (theme) {
+                themeProvider.setAppTheme(theme!);
+                Navigator.pop(context);
+              },
+            ),
+            RadioListTile<AppTheme>(
+              title: const Text('Wald (Grün)'),
+              value: AppTheme.forest,
+              groupValue: themeProvider.appTheme,
+              onChanged: (theme) {
+                themeProvider.setAppTheme(theme!);
                 Navigator.pop(context);
               },
             ),

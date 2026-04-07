@@ -7,7 +7,6 @@ import '../services/export_service.dart';
 import '../components/total_spending_card.dart';
 import '../components/category_expansion_tile.dart';
 import '../components/sort_selector.dart';
-import '../components/qr_export_dialog.dart';
 
 enum OverviewViewType { monthly, weekly }
 
@@ -267,17 +266,6 @@ class _OverviewPageState extends State<OverviewPage> {
               Navigator.pop(ctx);
             },
             child: const Text('Aktuelle Ansicht (CSV)'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              final qrData = _exportService.generateQrData(currentViewExpenses);
-              showDialog(
-                context: context,
-                builder: (context) => QrExportDialog(qrData: qrData),
-              );
-            },
-            child: const Text('QR-Code (Aktuelle Ansicht)'),
           ),
           TextButton(
             onPressed: () {

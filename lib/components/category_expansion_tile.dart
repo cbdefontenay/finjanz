@@ -58,9 +58,21 @@ class CategoryExpansionTile extends StatelessWidget {
                   horizontal: 24,
                   vertical: 4,
                 ),
-                title: Text(
-                  DateFormat('dd. MMMM yyyy', 'de_DE').format(e.date),
-                  style: const TextStyle(fontSize: 14),
+                title: Row(
+                  children: [
+                    Text(
+                      DateFormat('dd. MMMM yyyy', 'de_DE').format(e.date),
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    if (e.isRecurring) ...[
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.repeat,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ],
+                  ],
                 ),
                 subtitle: e.note != null
                     ? Text(

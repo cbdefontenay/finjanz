@@ -1,12 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+enum AppTheme { system, light, dark, ocean, forest }
 
 class ThemeProvider with ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.system;
+  AppTheme _appTheme = AppTheme.system;
+  static const String _themeKey = 'custom_app_theme';
 
-  ThemeMode get themeMode => _themeMode;
+  AppTheme get appTheme => _appTheme;
 
-  void setThemeMode(ThemeMode mode) {
-    _themeMode = mode;
+  ThemeProvider() {
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    final themeIndex = prefs.getInt(_themeKey);
+    if (themeIndex != null && themeIndex >= 0 && themeIndex < AppTheme.values.length) {
+      _appTheme = AppTheme.values[themeIndex];
+      notifyListeners();
+    }
+  }
+
+  Future<void> setAppTheme(AppTheme theme) async {
+    _appTheme = theme;
     notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_themeKey, theme.index);
   }
 }
